@@ -47,7 +47,7 @@ public class Ficha{
     }
 
     // Se usa cuando la ficha llega al final del tablero y es coronada
-    public void setesReina(boolean nuevaReina) {
+    public void setEsReina(boolean nuevaReina) {
         this.esReina = nuevaReina;
     }
 
