@@ -13,7 +13,6 @@ public class ConexionCliente implements Runnable {
     private Socket cliente;
     private String direccionIP;
     private int puerto;
-    private Tablero tableroJuego;
 
     //Streams/embudos para enviar y recibir datos entre el cliente y el servidor
     private DataInputStream entrada;
@@ -65,6 +64,7 @@ public class ConexionCliente implements Runnable {
                     int columnaDestino = Integer.parseInt(partesMensaje[4]);
                     tableroJuego.moverFicha(filaOrigen, columnaOrigen, filaDestino, columnaDestino);
                     ventanaJuego.SincronizacionTablero();
+                    ventanaJuego.actualizarTurno();
                     ventanaJuego.setMiTurno(true);
                     //Se imprime en la consola del servidor el movimiento que el cliente ha realizado,
                     //mostrando las coordenadas de origen y destino de la ficha movida.

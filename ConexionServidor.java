@@ -66,6 +66,7 @@ public class ConexionServidor implements Runnable {
                     int columnaDestino = Integer.parseInt(partesMensaje[4]);
                     tableroJuego.moverFicha(filaOrigen, columnaOrigen, filaDestino, columnaDestino);
                     ventanaJuego.SincronizacionTablero();
+                    ventanaJuego.actualizarTurno();
                     ventanaJuego.setMiTurno(true);
 
                     //Se llama al método moverFicha del tablero para actualizar el estado del juego 
