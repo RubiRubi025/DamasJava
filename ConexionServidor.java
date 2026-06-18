@@ -15,7 +15,6 @@ public class ConexionServidor implements Runnable {
     private int puerto;
     private ServerSocket servidor;
     private Socket cliente;
-    private Tablero tableroJuego;
 
     // Streams/embudos para enviar y recibir datos entre el servidor y el cliente
     private DataInputStream entrada;
