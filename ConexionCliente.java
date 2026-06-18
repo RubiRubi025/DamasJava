@@ -13,6 +13,7 @@ public class ConexionCliente implements Runnable {
     private Socket cliente;
     private String direccionIP;
     private int puerto;
+    private Tablero tableroJuego;
 
     //Streams/embudos para enviar y recibir datos entre el cliente y el servidor
     private DataInputStream entrada;
@@ -58,7 +59,7 @@ public class ConexionCliente implements Runnable {
                 if (accion.equals("MOVER")){
 
                     //Traducción de las partes del mensaje que son texto a números enteros.
-                    int filaOrigen = Integer.parseInt(partesMensaje[1]); 
+                    int filaOrigen = Integer.parseInt(partesMensaje[1]);
                     int columnaOrigen = Integer.parseInt(partesMensaje[2]);
                     int filaDestino = Integer.parseInt(partesMensaje[3]);
                     int columnaDestino = Integer.parseInt(partesMensaje[4]);
