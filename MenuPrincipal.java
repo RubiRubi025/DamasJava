@@ -1,61 +1,157 @@
 package damas;
-import javax.swing.*;
 import java.awt.*;
+import javax.swing.*;
 
 public class MenuPrincipal {
     
     JFrame menuPrincipal;
     JPanel panelMenuPrincipal;
+    
+    // Título simple y elegante
+    JLabel titulo;
+    
+    // Botones
     JButton botonHost;
     JButton botonClient;
+    JButton botonLocal;
+    
+    // Herramientas
+    GestorSonido reproductor;
     
     public MenuPrincipal(){
-    menuPrincipal = new JFrame("Juego de damas");
-    menuPrincipal.setSize(400, 400);
-    menuPrincipal.setLocationRelativeTo(null);
-    menuPrincipal.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    menuPrincipal.setResizable(true);
-    panelMenuPrincipal = new JPanel(new GridLayout(1, 3));
-    botonHost = new JButton("Host");
-    botonClient = new JButton("Cliente");
-    JButton botonLocal = new JButton("Local");
-    panelMenuPrincipal.add(botonLocal);
-    panelMenuPrincipal.add(botonHost);
-    panelMenuPrincipal.add(botonClient);
-    botonLocal.addActionListener(e -> {
-    Tablero tableroLogico = new Tablero();
-    Interfaz juego = new Interfaz(tableroLogico, null, null);
-    menuPrincipal.dispose();
-});
-    botonHost.addActionListener(e -> {
-        Tablero tableroLogico = new Tablero();
-        ConexionServidor servidor = new ConexionServidor(5000, tableroLogico);
-        Thread hiloServidor = new Thread(servidor);
-        hiloServidor.start();
-        try {
-            String miIp = java.net.InetAddress.getLocalHost().getHostAddress();
-            JOptionPane.showMessageDialog(null, "Tu servidor está abierto.\nDile a tu oponente que use la IP: " + miIp + "\nPuerto: 5000");
-        } catch (Exception ex) {
-            System.out.println("Error sacando la IP");
-        }
-        Interfaz juego = new Interfaz(tableroLogico, servidor, null);
-        servidor.setInterfaz(juego);
-        menuPrincipal.dispose();
+        // 1. Instanciamos el sonido (Paso 1 completado)
+        reproductor = new GestorSonido();
+        
+        // 2. Configuración básica de la ventana
+        menuPrincipal = new JFrame("Juego de Damas - Inicio");
+        menuPrincipal.setSize(500, 600); 
+        menuPrincipal.setLocationRelativeTo(null);
+        menuPrincipal.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        menuPrincipal.setResizable(false); 
 
-    });
-        botonClient.addActionListener(e -> {
-        String ipHost = JOptionPane.showInputDialog("Ingresa la IP del Host:");
-        if (ipHost != null && !ipHost.trim().isEmpty()) {
+        // 3. Panel con fondo nocturno y GridBagLayout
+        panelMenuPrincipal = new JPanel(new GridBagLayout()); 
+        panelMenuPrincipal.setBackground(new Color(15, 23, 42)); // Azul noche oscuro
+
+        // --- DISEÑO DEL TÍTULO MINIMALISTA ---
+        // Fuente grande y en negrita
+        Font fuenteTitulo = new Font("Courier New", Font.BOLD, 70); 
+        
+        titulo = new JLabel("DAMAS");
+        titulo.setFont(fuenteTitulo);
+        titulo.setForeground(Color.WHITE); // Blanco puro
+        // Centramos el texto dentro del JLabel
+        titulo.setHorizontalAlignment(SwingConstants.CENTER); 
+        
+        // --- FIN DISEÑO TÍTULO ---
+
+        // 4. Instanciamos y estilizamos los botones
+        botonLocal = new JButton("JUEGO LOCAL");
+        botonHost = new JButton("CREAR PARTIDA (HOST)");
+        botonClient = new JButton("UNIRSE A PARTIDA");
+
+        estilizarBoton(botonLocal);
+        estilizarBoton(botonHost);
+        estilizarBoton(botonClient);
+
+        // 5. Configuramos el Layout para apilar todo verticalmente
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0; // Columna central
+        gbc.fill = GridBagConstraints.HORIZONTAL; 
+        
+        // -- AGREGAMOS EL TÍTULO (En la fila 0) --
+        gbc.gridy = 0;
+        // Damos buen espacio alrededor del título
+        gbc.insets = new Insets(30, 20, 60, 20); 
+        panelMenuPrincipal.add(titulo, gbc);
+
+        // -- AGREGAMOS LOS BOTONES (Filas 1, 2, 3) --
+        gbc.insets = new Insets(10, 50, 10, 50); // Márgenes más pequeños entre botones
+        
+        gbc.gridy = 1;
+        panelMenuPrincipal.add(botonLocal, gbc);
+        
+        gbc.gridy = 2;
+        panelMenuPrincipal.add(botonHost, gbc);
+        
+        gbc.gridy = 3;
+        panelMenuPrincipal.add(botonClient, gbc);
+
+        // 6. Los ActionListeners con sonido
+        botonLocal.addActionListener(e -> {
+            reproductor.reproducirClic(); 
             Tablero tableroLogico = new Tablero();
-            ConexionCliente cliente = new ConexionCliente(ipHost, 5000, tableroLogico);
-            Thread hiloCliente = new Thread(cliente);
-            hiloCliente.start();
-            Interfaz juego = new Interfaz(tableroLogico, null, cliente);
-            cliente.setInterfaz(juego);
+            Interfaz juego = new Interfaz(tableroLogico, null, null);
             menuPrincipal.dispose();
-        }
-    });
-    menuPrincipal.add(panelMenuPrincipal);
-    menuPrincipal.setVisible(true);
+        });
+
+        botonHost.addActionListener(e -> {
+            reproductor.reproducirClic();
+            Tablero tableroLogico = new Tablero();
+            ConexionServidor servidor = new ConexionServidor(5000, tableroLogico);
+            Thread hiloServidor = new Thread(servidor);
+            hiloServidor.start();
+            try {
+                String miIp = java.net.InetAddress.getLocalHost().getHostAddress();
+                JOptionPane.showMessageDialog(null, "Servidor abierto.\nOponente IP: " + miIp + "\nPuerto: 5000");
+            } catch (Exception ex) { System.out.println("Error IP"); }
+            Interfaz juego = new Interfaz(tableroLogico, servidor, null);
+            servidor.setInterfaz(juego);
+            menuPrincipal.dispose();
+        });
+
+        botonClient.addActionListener(e -> {
+            reproductor.reproducirClic();
+            String ipHost = JOptionPane.showInputDialog("Ingresa la IP del Host:");
+            if (ipHost != null && !ipHost.trim().isEmpty()) {
+                Tablero tableroLogico = new Tablero();
+                ConexionCliente cliente = new ConexionCliente(ipHost, 5000, tableroLogico);
+                Thread hiloCliente = new Thread(cliente);
+                hiloCliente.start();
+                Interfaz juego = new Interfaz(tableroLogico, null, cliente);
+                cliente.setInterfaz(juego);
+                menuPrincipal.dispose();
+            }
+        });
+
+        menuPrincipal.add(panelMenuPrincipal);
+        menuPrincipal.setVisible(true);
     }
+
+    // Método ayudante para diseño de botones (¡Ahora con efectos Hover!)
+    private void estilizarBoton(JButton boton) {
+        // Definimos nuestra paleta de colores para el botón
+        Color colorOriginal = new Color(109, 40, 217); // Morado retro original
+        Color colorIluminado = new Color(139, 92, 246); // Morado más claro y brillante
+        
+        boton.setBackground(colorOriginal); 
+        boton.setForeground(Color.WHITE); 
+        boton.setFont(new Font("Courier New", Font.BOLD, 18)); 
+        boton.setFocusPainted(false); 
+        
+        // Reglas de Mac
+        boton.setOpaque(true);
+        boton.setBorderPainted(false);
+        
+        boton.setPreferredSize(new Dimension(300, 50)); 
+
+        // --- LA MAGIA INTERACTIVA ---
+        
+        // 1. Cambiamos la flecha por la "manito" al pasar por encima
+        boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // 2. Le enseñamos al botón a reaccionar al ratón (Hover)
+        boton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                // Cuando el ratón ENTRA, cambiamos al color brillante
+                boton.setBackground(colorIluminado);
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                // Cuando el ratón SALE, lo regresamos a su color original
+                boton.setBackground(colorOriginal);
+            }
+        });
+    }
+
 }
