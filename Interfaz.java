@@ -16,7 +16,18 @@ public class Interfaz extends JFrame {
     private ConexionServidor servidor;
     private ConexionCliente cliente;
     private boolean miTurno;
-    private String miColor; // "B" para blancas, "N" para negras
+    private String miColor;
+    private String nombreBlancas;
+    private String nombreNegras;
+    private JLabel labelNombreBlancas;
+    private JLabel labelNombreNegras;
+    private JLabel labelTiempo;
+    private Timer temporizador;
+    private int segundos;
+    private JPanel panelTiempo;
+    private JLabel labelTurno;
+    private JPanel panelSuperior;
+
 
     public Interfaz(Tablero tableroLogico, ConexionServidor servidor, ConexionCliente cliente) {
         // Cargar iconos
@@ -26,6 +37,15 @@ public class Interfaz extends JFrame {
         this.tableroJuego = tableroLogico;
         this.servidor = servidor;
         this.cliente = cliente;
+        segundos = 0;
+        labelTiempo = new JLabel("00:00");
+        temporizador = new Timer(1000, e -> {
+            segundos++;
+            int mins = segundos / 60;
+            int secs = segundos % 60;
+            labelTiempo.setText(String.format("%02d:%02d", mins, secs));
+        });
+        temporizador.start();
 
         // Determinar color y turno inicial
         if (this.servidor != null) {
@@ -40,28 +60,38 @@ public class Interfaz extends JFrame {
         }
 
         // Configuración de la ventana
-        setTitle("Juego de damas");
-        setSize(600, 600);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setResizable(true);
+            setTitle("Juego de damas");
+            setSize(600, 600);
+            setLocationRelativeTo(null);
+            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            setResizable(true);
+            setLayout(new BorderLayout());
+
+            panelSuperior = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+                labelNombreBlancas = new JLabel("Blancas: Jugador 1");
+                labelNombreNegras = new JLabel("Negras: Jugador 2");
+                labelTurno = new JLabel("Turno: Blancas");  
+                    add(panelSuperior, BorderLayout.NORTH);
+                    panelSuperior.add(labelTiempo);
+                    panelSuperior.add(labelTurno);
+                    panelSuperior.add(labelNombreNegras);
+                    panelSuperior.add(labelNombreBlancas);
 
         // Panel del tablero (8x8)
         panelTablero = new JPanel(new GridLayout(8, 8));
-        panelTablero.setPreferredSize(new Dimension(400, 400));
+    panelTablero.setPreferredSize(new Dimension(400, 400));
 
-        // Panel de fondo con imagen
-        panelFondo = new JPanel(new GridBagLayout()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                ImageIcon imagenFondo = new ImageIcon("damas/assets/fondo.jpg");
-                g.drawImage(imagenFondo.getImage(), 0, 0, getWidth(), getHeight(), this);
-            }
-        };
-        panelFondo.add(panelTablero);
-        add(panelFondo);
-
+    panelFondo = new JPanel(new GridBagLayout()) {
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            ImageIcon imagenFondo = new ImageIcon("damas/assets/fondo.jpg");
+            g.drawImage(imagenFondo.getImage(), 0, 0, getWidth(), getHeight(), this);
+        }
+    };
+    panelFondo.add(panelTablero);
+    add(panelFondo, BorderLayout.CENTER);
+    segundos = 0;
         // Crear botones (casillas)
         botones = new JButton[8][8];
         for (int i = 0; i < 8; i++) {
@@ -135,6 +165,7 @@ public class Interfaz extends JFrame {
                         }
                         // Actualizar la interfaz
                         SincronizacionTablero();
+                        actualizarTurno();
                     } else {
                         // Si el movimiento no es válido, mostramos mensaje (ya lo muestra moverFicha)
                         // y reiniciamos la selección
@@ -181,4 +212,13 @@ public class Interfaz extends JFrame {
     public void setMiTurno(boolean turnoActivo) {
         this.miTurno = turnoActivo;
     }
+    public void actualizarTurno() {
+    String turnoTexto;
+    if (miTurno) {
+        turnoTexto = miColor.equals("B") ? "Blancas" : "Negras";
+    } else {
+        turnoTexto = miColor.equals("B") ? "Negras" : "Blancas";
+    }
+    labelTurno.setText("Turno: " + turnoTexto);
+}
 }
