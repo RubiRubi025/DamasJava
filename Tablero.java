@@ -136,4 +136,17 @@ public class Tablero {
 
         return true;
     }
+    public int contarFichas(String colorBuscado) {
+        int contador = 0;
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
+                Ficha fichaActual = tablero[i][j];
+                // Si hay una ficha y es del color que estamos buscando, sumamos 1
+                if (fichaActual != null && fichaActual.getColor().equals(colorBuscado)) {
+                    contador++;
+                }
+            }
+        }
+        return contador;
+    }
 }

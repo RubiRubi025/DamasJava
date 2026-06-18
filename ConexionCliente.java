@@ -19,13 +19,15 @@ public class ConexionCliente implements Runnable {
     private DataOutputStream salida;
     private Tablero tableroJuego;
     private Interfaz ventanaJuego;  
+    private String miNombre;
 
 
     //Constructor que inicializa la dirección IP y el puerto del servidor al que el cliente se conectará
-    public ConexionCliente(String direccionIP, int puerto, Tablero tableroLogico) {
+    public ConexionCliente(String direccionIP, int puerto, Tablero tableroLogico, String miNombre) {
         this.direccionIP = direccionIP; // Guarda la dirección IP del servidor
         this.puerto = puerto; // Guarda el número de puerto del servidor
         this.tableroJuego = tableroLogico;
+        this.miNombre = miNombre;
 
     }
 
@@ -41,6 +43,7 @@ public class ConexionCliente implements Runnable {
             //Inicializa los streams para enviar y recibir datos
             entrada = new DataInputStream(cliente.getInputStream());
             salida = new DataOutputStream(cliente.getOutputStream());
+            enviarMensaje("NOMBRE," + miNombre);
 
                 //Este bucle permanece activo mientras el cliente esté corriendo,
                 //esperando y procesando mensajes del servidor
@@ -53,7 +56,16 @@ public class ConexionCliente implements Runnable {
                     // Aquí se pueden agregar condiciones para procesar diferentes tipos de mensajes
                 String[] partesMensaje = mensaje.split(","); // Divide el mensaje en partes usando la coma como separador
                 String accion = partesMensaje[0]; // La primera parte del mensaje indica la acción a realizar
-                
+                        if (accion.equals("NOMBRE")) {
+                        String nombreRival = partesMensaje[1];
+                        
+                        // Truco de ingeniero: Esperamos un milisegundo por si la ventana gráfica aún se está dibujando
+                        while(ventanaJuego == null) {
+                            try { Thread.sleep(100); } catch(Exception e){}
+                        }
+                        
+                        ventanaJuego.setNombreBlancas(nombreRival);
+                    }
                 //procesamiento de un mensaje de movimiento
                 if (accion.equals("MOVER")){
 
