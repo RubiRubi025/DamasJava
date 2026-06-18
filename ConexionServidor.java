@@ -68,6 +68,13 @@ public class ConexionServidor implements Runnable {
                     ventanaJuego.SincronizacionTablero();
                     ventanaJuego.setMiTurno(true);
 
+                    //Se llama al método moverFicha del tablero para actualizar el estado del juego 
+                    //con el movimiento que el cliente ha realizado.
+                    tableroJuego.moverFicha(filaOrigen, columnaOrigen, filaDestino, columnaDestino);
+
+                    // Imprimimos en consola temporalmente para el diagnóstico (debugging)
+                    tableroJuego.ImprimirTablero();
+
                     //Se imprime en la consola del servidor el movimiento que el cliente ha realizado,
                     //mostrando las coordenadas de origen y destino de la ficha movida.
                     System.out.println("El rival movió la ficha de [" + filaOrigen + "," + columnaOrigen + "] a [" + filaDestino + "," + columnaDestino + "]");
