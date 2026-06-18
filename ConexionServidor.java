@@ -20,11 +20,13 @@ public class ConexionServidor implements Runnable {
     private DataInputStream entrada;
     private DataOutputStream salida;
     private Tablero tableroJuego;
-    private Interfaz ventanaJuego;  
+    private Interfaz ventanaJuego; 
+    private String miNombre; 
 
     // Constructor que inicializa el puerto del servidor
-    public ConexionServidor(int puerto, Tablero tableroLogico) {
+    public ConexionServidor(int puerto, Tablero tableroLogico, String miNombre) {
 
+        this.miNombre = miNombre;
         this.puerto = puerto; // Guarda el número de puerto para el servidor
         this.tableroJuego = tableroLogico;
 }
@@ -44,6 +46,7 @@ public class ConexionServidor implements Runnable {
             // Inicializa los streams para enviar y recibir datos
             entrada = new DataInputStream(cliente.getInputStream()); // Stream para recibir datos del cliente
             salida = new DataOutputStream(cliente.getOutputStream()); // Stream para enviar datos al cliente
+            enviarMensaje("NOMBRE," + miNombre);
 
             //Este bucle permanece activo mientras el servidor 
             //esté corriendo, esperando y procesando mensajes del cliente
@@ -55,7 +58,16 @@ public class ConexionServidor implements Runnable {
                 // Aquí se pueden agregar condiciones para procesar diferentes tipos de mensajes
                 String[] partesMensaje = mensaje.split(","); // Divide el mensaje en partes usando la coma como separador
                 String accion = partesMensaje[0]; // La primera parte del mensaje indica la acción a realizar
+                if (accion.equals("NOMBRE")) {
+    String nombreRival = partesMensaje[1];
+    
+                while(ventanaJuego == null) {
+                    try { Thread.sleep(100); } catch(Exception e){}
+                }
                 
+                // El servidor (Host) siempre juega con Blancas, así que el rival es el de las Negras
+                ventanaJuego.setNombreNegras(nombreRival);
+            }
                 //procesamiento de un mensaje de movimiento
                 if (accion.equals("MOVER")){
 
@@ -71,7 +83,6 @@ public class ConexionServidor implements Runnable {
 
                     //Se llama al método moverFicha del tablero para actualizar el estado del juego 
                     //con el movimiento que el cliente ha realizado.
-                    tableroJuego.moverFicha(filaOrigen, columnaOrigen, filaDestino, columnaDestino);
 
                     // Imprimimos en consola temporalmente para el diagnóstico (debugging)
                     tableroJuego.ImprimirTablero();

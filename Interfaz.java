@@ -27,9 +27,11 @@ public class Interfaz extends JFrame {
     private JPanel panelTiempo;
     private JLabel labelTurno;
     private JPanel panelSuperior;
+    private boolean modoCPU;
+    private IA ia;
+    private Timer timerCPU;
 
-
-    public Interfaz(Tablero tableroLogico, ConexionServidor servidor, ConexionCliente cliente) {
+    public Interfaz(Tablero tableroLogico, ConexionServidor servidor, ConexionCliente cliente, String nombreBlancas, String nombreNegras) { 
         // Cargar iconos
         iconoBlanco = new ImageIcon("damas/assets/fichaBlanca.png");
         iconoNegro = new ImageIcon("damas/assets/fichaNegra.png");
@@ -37,6 +39,25 @@ public class Interfaz extends JFrame {
         this.tableroJuego = tableroLogico;
         this.servidor = servidor;
         this.cliente = cliente;
+        this.modoCPU = modoCPU;
+
+            // modo cpu
+
+            if (modoCPU) {
+    this.miColor = "B";
+    this.miTurno = true;
+    this.ia = new IA();
+    // Inicializar timer para la CPU
+    timerCPU = new Timer(500, e -> {
+        timerCPU.stop();
+        ejecutarCPU();
+    });
+    timerCPU.setRepeats(false);
+}
+
+
+
+        
         segundos = 0;
         labelTiempo = new JLabel("00:00");
         temporizador = new Timer(1000, e -> {
@@ -45,6 +66,7 @@ public class Interfaz extends JFrame {
             int secs = segundos % 60;
             labelTiempo.setText(String.format("%02d:%02d", mins, secs));
         });
+        
         temporizador.start();
 
         // Determinar color y turno inicial
@@ -66,10 +88,11 @@ public class Interfaz extends JFrame {
             setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             setResizable(true);
             setLayout(new BorderLayout());
-
+    
+            // Panel superior
             panelSuperior = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-                labelNombreBlancas = new JLabel("Blancas: Jugador 1");
-                labelNombreNegras = new JLabel("Negras: Jugador 2");
+                labelNombreBlancas = new JLabel("Blancas: " + nombreBlancas);
+                labelNombreNegras = new JLabel("Negras: " + nombreNegras);
                 labelTurno = new JLabel("Turno: Blancas");  
                     add(panelSuperior, BorderLayout.NORTH);
                     panelSuperior.add(labelTiempo);
@@ -162,14 +185,18 @@ public class Interfaz extends JFrame {
                         } else {
                             // Modo local: alternar color
                             miColor = miColor.equals("B") ? "N" : "B";
+                        }    
+                        if(modoCPU) {
+                        // Cambiar turno: ahora es turno de la CPU (negras)
+                        miTurno = false;
+                        // Iniciar el timer para que la CPU "piense"
+                        timerCPU.start();
                         }
                         // Actualizar la interfaz
-                        SincronizacionTablero();
+
                         actualizarTurno();
-                    } else {
-                        // Si el movimiento no es válido, mostramos mensaje (ya lo muestra moverFicha)
-                        // y reiniciamos la selección
-                    }
+                    } 
+                    SincronizacionTablero();
                     // Reiniciamos selección (tanto si fue válido como si no)
                     filaOrigen = -1;
                     columnaOrigen = -1;
@@ -185,7 +212,7 @@ public class Interfaz extends JFrame {
         setVisible(true);
     }
 
-    public void SincronizacionTablero() {
+public void SincronizacionTablero() {
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
                 // Restaurar colores de fondo
@@ -205,7 +232,41 @@ public class Interfaz extends JFrame {
                 } else {
                     botones[i][j].setIcon(null);
                 }
-            }
+            } 
+        } 
+        verificarFinDeJuego(); 
+    }
+public void setNombreBlancas(String nombre) {
+    this.nombreBlancas = nombre;
+    labelNombreBlancas.setText("Blancas: " + nombre);
+}
+public void setNombreNegras(String nombre) {
+    this.nombreNegras = nombre;
+    labelNombreNegras.setText("Negras: " + nombre);
+}
+public void verificarFinDeJuego() {
+        int sobrevivientesBlancas = tableroJuego.contarFichas("B");
+        int sobrevivientesNegras = tableroJuego.contarFichas("N");
+
+        // Si las blancas se quedan sin fichas, ganan las negras
+        if (sobrevivientesBlancas == 0) {
+            miTurno = false; // Bloqueamos el tablero para siempre
+            if(temporizador != null) temporizador.stop(); // Detenemos el cronómetro
+            
+            JOptionPane.showMessageDialog(this, 
+                "¡Felicidades " + nombreNegras + "! Las fichas Negras han dominado el tablero y han ganado la partida.", 
+                "¡VICTORIA NEGRA!", 
+                JOptionPane.INFORMATION_MESSAGE);
+        } 
+        // Si las negras se quedan sin fichas, ganan las blancas
+        else if (sobrevivientesNegras == 0) {
+            miTurno = false; // Bloqueamos el tablero para siempre
+            if(temporizador != null) temporizador.stop(); // Detenemos el cronómetro
+            
+            JOptionPane.showMessageDialog(this, 
+                "¡Felicidades " + nombreBlancas + "! Las fichas Blancas han dominado el tablero y han ganado la partida.", 
+                "¡VICTORIA BLANCA!", 
+                JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
@@ -219,6 +280,37 @@ public class Interfaz extends JFrame {
     } else {
         turnoTexto = miColor.equals("B") ? "Negras" : "Blancas";
     }
+    if (modoCPU) {
+        String turno = miTurno ? "Tu turno (Blancas)" : "Turno de la CPU (Negras)";
+        labelTurno.setText(turno);
+    } else {
+        String turno = (miTurno ? miColor : (miColor.equals("B") ? "N" : "B"));
+        labelTurno.setText("Turno: " + (turno.equals("B") ? "Blancas" : "Negras"));
+    }
     labelTurno.setText("Turno: " + turnoTexto);
+}
+private void ejecutarCPU() {
+    if (!modoCPU) return;
+    int[] movimiento = ia.elegirMovimiento(tableroJuego, "N");
+    if (movimiento == null) {
+        JOptionPane.showMessageDialog(this, "La CPU no tiene movimientos. ¡Has ganado!");
+        // Aquí se podría finalizar la partida
+        return;
+    }
+    int filaOri = movimiento[0], colOri = movimiento[1];
+    int filaDes = movimiento[2], colDes = movimiento[3];
+    boolean exito = tableroJuego.moverFicha(filaOri, colOri, filaDes, colDes);
+    if (exito) {
+        // Actualizar tablero
+        SincronizacionTablero();
+        // Cambiar turno a jugador
+        miTurno = true;
+        actualizarTurno();
+        // Verificar si el jugador tiene movimientos, si no, fin de partida
+        // (opcional)
+    } else {
+        // Si falla (no debería), intentar de nuevo
+        ejecutarCPU();
+    }
 }
 }

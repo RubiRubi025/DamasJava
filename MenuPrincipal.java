@@ -78,37 +78,62 @@ public class MenuPrincipal {
         panelMenuPrincipal.add(botonClient, gbc);
 
         // 6. Los ActionListeners con sonido
-        botonLocal.addActionListener(e -> {
-            reproductor.reproducirClic(); 
-            Tablero tableroLogico = new Tablero();
-            Interfaz juego = new Interfaz(tableroLogico, null, null);
-            menuPrincipal.dispose();
-        });
+botonLocal.addActionListener(e -> {
+    reproductor.reproducirClic(); 
+    
+    // Pedimos ambos nombres
+    String nombreB = JOptionPane.showInputDialog("Nombre Jugador 1 (Blancas):");
+    if (nombreB == null || nombreB.trim().isEmpty()) nombreB = "Jugador 1";
+    
+    String nombreN = JOptionPane.showInputDialog("Nombre Jugador 2 (Negras):");
+    if (nombreN == null || nombreN.trim().isEmpty()) nombreN = "Jugador 2";
+    
+    Tablero tableroLogico = new Tablero();
+    Interfaz juego = new Interfaz(tableroLogico, null, null, nombreB, nombreN);
+    menuPrincipal.dispose();
+});
 
-        botonHost.addActionListener(e -> {
-            reproductor.reproducirClic();
-            Tablero tableroLogico = new Tablero();
-            ConexionServidor servidor = new ConexionServidor(5000, tableroLogico);
-            Thread hiloServidor = new Thread(servidor);
-            hiloServidor.start();
-            try {
-                String miIp = java.net.InetAddress.getLocalHost().getHostAddress();
-                JOptionPane.showMessageDialog(null, "Servidor abierto.\nOponente IP: " + miIp + "\nPuerto: 5000");
-            } catch (Exception ex) { System.out.println("Error IP"); }
-            Interfaz juego = new Interfaz(tableroLogico, servidor, null);
-            servidor.setInterfaz(juego);
-            menuPrincipal.dispose();
+                botonHost.addActionListener(e -> {
+                    reproductor.reproducirClic();
+                    
+                    // 1. Pedimos el nombre
+                    String miNombre = JOptionPane.showInputDialog("Ingresa tu nombre (Host/Blancas):");
+                    if(miNombre == null || miNombre.trim().isEmpty()) miNombre = "Host";
+                    
+                    Tablero tableroLogico = new Tablero();
+                    // 2. Le pasamos el nombre al hilo de red
+                    ConexionServidor servidor = new ConexionServidor(5000, tableroLogico, miNombre);
+                    Thread hiloServidor = new Thread(servidor);
+                    hiloServidor.start();
+                    
+                    try {
+                        String miIp = java.net.InetAddress.getLocalHost().getHostAddress();
+                        JOptionPane.showMessageDialog(null, "Servidor abierto.\nOponente IP: " + miIp + "\nPuerto: 5000");
+                    } catch (Exception ex) { System.out.println("Error IP"); }
+                    
+                    // 3. Rompemos el corto circuito: 5 parámetros. El rival temporalmente es "Esperando..."
+                    Interfaz juego = new Interfaz(tableroLogico, servidor, null, miNombre, "Esperando...");
+                    servidor.setInterfaz(juego);
+                    menuPrincipal.dispose();
         });
 
         botonClient.addActionListener(e -> {
             reproductor.reproducirClic();
+            
+            // 1. Pedimos el nombre
+            String miNombre = JOptionPane.showInputDialog("Ingresa tu nombre (Cliente/Negras):");
+            if(miNombre == null || miNombre.trim().isEmpty()) miNombre = "Cliente";
+            
             String ipHost = JOptionPane.showInputDialog("Ingresa la IP del Host:");
             if (ipHost != null && !ipHost.trim().isEmpty()) {
                 Tablero tableroLogico = new Tablero();
-                ConexionCliente cliente = new ConexionCliente(ipHost, 5000, tableroLogico);
+                // 2. Le pasamos el nombre a la red
+                ConexionCliente cliente = new ConexionCliente(ipHost, 5000, tableroLogico, miNombre);
                 Thread hiloCliente = new Thread(cliente);
                 hiloCliente.start();
-                Interfaz juego = new Interfaz(tableroLogico, null, cliente);
+                
+                // 3. 5 parámetros. El rival temporalmente es "Esperando..."
+                Interfaz juego = new Interfaz(tableroLogico, null, cliente, "Esperando...", miNombre);
                 cliente.setInterfaz(juego);
                 menuPrincipal.dispose();
             }
