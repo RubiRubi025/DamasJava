@@ -34,14 +34,12 @@ public class Interfaz extends JFrame {
     private JButton botonVolver;
 
     public Interfaz(Tablero tableroLogico, ConexionServidor servidor, ConexionCliente cliente, String nombreBlancas, String nombreNegras) { 
-        // Cargar iconos con las rutas personalizadas
         cargarIconosPersonalizados();
 
         this.tableroJuego = tableroLogico;
         this.servidor = servidor;
         this.cliente = cliente;
         
-        // Detectar modo CPU (si ambos nombres son "CPU" o similar)
         this.modoCPU = nombreNegras.equals("CPU");
         
         if (modoCPU) {
@@ -65,7 +63,6 @@ public class Interfaz extends JFrame {
         });
         temporizador.start();
 
-        // Determinar color y turno inicial
         if (this.servidor != null) {
             this.miTurno = true;
             this.miColor = "B";
@@ -77,7 +74,6 @@ public class Interfaz extends JFrame {
             this.miColor = "B";
         }
 
-        // Configuración de la ventana
         setTitle("Juego de damas - Digital Shield");
         setSize(700, 700);
         setLocationRelativeTo(null);
@@ -85,12 +81,10 @@ public class Interfaz extends JFrame {
         setResizable(true);
         setLayout(new BorderLayout());
 
-        // Panel superior con información
         panelSuperior = new JPanel(new BorderLayout());
         panelSuperior.setBackground(new Color(15, 23, 42));
         panelSuperior.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
 
-        // Panel izquierdo: nombres y turno
         JPanel panelInfo = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
         panelInfo.setOpaque(false);
         
@@ -110,7 +104,6 @@ public class Interfaz extends JFrame {
         panelInfo.add(labelNombreBlancas);
         panelInfo.add(labelNombreNegras);
 
-        // Panel derecho: tiempo y botón volver
         JPanel panelDerecho = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 5));
         panelDerecho.setOpaque(false);
         
@@ -118,7 +111,6 @@ public class Interfaz extends JFrame {
         labelTiempo.setForeground(Color.CYAN);
         labelTiempo.setFont(new Font("Courier New", Font.BOLD, 16));
         
-        // Botón Volver al Menú
         botonVolver = new JButton("🏠 Menú");
         botonVolver.setBackground(new Color(220, 53, 69));
         botonVolver.setForeground(Color.WHITE);
@@ -140,17 +132,10 @@ public class Interfaz extends JFrame {
         });
         
         botonVolver.addActionListener(e -> {
-            // Detener temporizadores
             if (temporizador != null) temporizador.stop();
             if (timerCPU != null) timerCPU.stop();
-            
-            // Cerrar la ventana actual
             dispose();
-            
-            // Abrir el menú principal nuevamente
-            SwingUtilities.invokeLater(() -> {
-                new MenuPrincipal();
-            });
+            SwingUtilities.invokeLater(() -> new MenuPrincipal());
         });
         
         panelDerecho.add(labelTiempo);
@@ -160,11 +145,9 @@ public class Interfaz extends JFrame {
         panelSuperior.add(panelDerecho, BorderLayout.EAST);
         add(panelSuperior, BorderLayout.NORTH);
 
-        // Panel del tablero (8x8)
         panelTablero = new JPanel(new GridLayout(8, 8));
         panelTablero.setPreferredSize(new Dimension(400, 400));
 
-        // Panel de fondo con imagen personalizada
         panelFondo = new JPanel(new GridBagLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -173,7 +156,6 @@ public class Interfaz extends JFrame {
                     ImageIcon imagenFondo = new ImageIcon(MenuPrincipal.rutaFondoElegido);
                     g.drawImage(imagenFondo.getImage(), 0, 0, getWidth(), getHeight(), this);
                 } catch (Exception e) {
-                    // Si no carga la imagen, usar color de fondo
                     g.setColor(new Color(15, 23, 42));
                     g.fillRect(0, 0, getWidth(), getHeight());
                 }
@@ -182,7 +164,6 @@ public class Interfaz extends JFrame {
         panelFondo.add(panelTablero);
         add(panelFondo, BorderLayout.CENTER);
 
-        // Crear botones (casillas)
         botones = new JButton[8][8];
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
@@ -190,7 +171,6 @@ public class Interfaz extends JFrame {
                 final int fila = i;
                 final int col = j;
 
-                // Color de fondo inicial
                 if ((i + j) % 2 == 1) {
                     btn.setBackground(Color.BLACK);
                 } else {
@@ -246,7 +226,7 @@ public class Interfaz extends JFrame {
                         }
                         actualizarTurno();
                     }
-                    sincronizarTablero();
+                    SincronizacionTablero();
                     filaOrigen = -1;
                     columnaOrigen = -1;
                 });
@@ -256,13 +236,12 @@ public class Interfaz extends JFrame {
             }
         }
 
-        sincronizarTablero();
+        SincronizacionTablero();
         setVisible(true);
     }
 
     private void cargarIconosPersonalizados() {
         try {
-            // Cargar iconos desde las rutas globales
             ImageIcon iconoBlancoTemp = new ImageIcon(MenuPrincipal.rutaFichaLocal);
             Image imagenBlanca = iconoBlancoTemp.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
             iconoBlanco = new ImageIcon(imagenBlanca);
@@ -271,14 +250,13 @@ public class Interfaz extends JFrame {
             Image imagenNegra = iconoNegroTemp.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
             iconoNegro = new ImageIcon(imagenNegra);
         } catch (Exception e) {
-            // Fallback: usar iconos por defecto
             iconoBlanco = new ImageIcon("damas/assets/fichaBlanca.png");
             iconoNegro = new ImageIcon("damas/assets/fichaNegra.png");
             System.out.println("Error cargando iconos personalizados: " + e.getMessage());
         }
     }
 
-    public void sincronizarTablero() {
+    public void SincronizacionTablero() {
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
                 if ((i + j) % 2 == 1) {
@@ -371,7 +349,7 @@ public class Interfaz extends JFrame {
         int filaDes = movimiento[2], colDes = movimiento[3];
         boolean exito = tableroJuego.moverFicha(filaOri, colOri, filaDes, colDes);
         if (exito) {
-            sincronizarTablero();
+            SincronizacionTablero();
             miTurno = true;
             actualizarTurno();
         } else {
@@ -380,16 +358,9 @@ public class Interfaz extends JFrame {
     }
 
     private void volverAlMenu() {
-        // Detener temporizadores
         if (temporizador != null) temporizador.stop();
         if (timerCPU != null) timerCPU.stop();
-        
-        // Cerrar la ventana actual
         dispose();
-        
-        // Abrir el menú principal nuevamente
-        SwingUtilities.invokeLater(() -> {
-            new MenuPrincipal();
-        });
+        SwingUtilities.invokeLater(() -> new MenuPrincipal());
     }
 }
