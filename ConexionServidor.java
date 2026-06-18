@@ -20,14 +20,15 @@ public class ConexionServidor implements Runnable {
     // Streams/embudos para enviar y recibir datos entre el servidor y el cliente
     private DataInputStream entrada;
     private DataOutputStream salida;
+    private Tablero tableroJuego;
+    private Interfaz ventanaJuego;  
 
-    // Constructor que inicializa el puerto del servidor y la referencia al tablero del juego
-    public ConexionServidor(int puerto, Tablero tablero) {
-        
+    // Constructor que inicializa el puerto del servidor
+    public ConexionServidor(int puerto, Tablero tableroLogico) {
+
         this.puerto = puerto; // Guarda el número de puerto para el servidor
-        this.tableroJuego = tablero; // Guarda la referencia al tablero del juego
-
-    }
+        this.tableroJuego = tableroLogico;
+}
 
     // Método que se ejecuta cuando el hilo del servidor comienza a correr
     @Override
@@ -64,6 +65,9 @@ public class ConexionServidor implements Runnable {
                     int columnaOrigen = Integer.parseInt(partesMensaje[2]);
                     int filaDestino = Integer.parseInt(partesMensaje[3]);
                     int columnaDestino = Integer.parseInt(partesMensaje[4]);
+                    tableroJuego.moverFicha(filaOrigen, columnaOrigen, filaDestino, columnaDestino);
+                    ventanaJuego.SincronizacionTablero();
+                    ventanaJuego.setMiTurno(true);
 
                     //Se llama al método moverFicha del tablero para actualizar el estado del juego 
                     //con el movimiento que el cliente ha realizado.
@@ -97,4 +101,7 @@ public class ConexionServidor implements Runnable {
             System.out.println("Error al enviar: " + e.getMessage());
         }
     }
+    public void setInterfaz(Interfaz ventana) {
+    this.ventanaJuego = ventana;
+}
 }

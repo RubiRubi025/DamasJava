@@ -18,13 +18,15 @@ public class ConexionCliente implements Runnable {
     //Streams/embudos para enviar y recibir datos entre el cliente y el servidor
     private DataInputStream entrada;
     private DataOutputStream salida;
+    private Tablero tableroJuego;
+    private Interfaz ventanaJuego;  
+
 
     //Constructor que inicializa la dirección IP y el puerto del servidor al que el cliente se conectará
-    //También recibe una referencia al tablero del juego para poder actualizarlo con los movimientos del rival
-    public ConexionCliente(String direccionIP, int puerto, Tablero tablero){
+    public ConexionCliente(String direccionIP, int puerto, Tablero tableroLogico) {
         this.direccionIP = direccionIP; // Guarda la dirección IP del servidor
         this.puerto = puerto; // Guarda el número de puerto del servidor
-        this.tableroJuego = tablero; // Guarda la referencia al tablero del juego
+        this.tableroJuego = tableroLogico;
 
     }
 
@@ -61,14 +63,9 @@ public class ConexionCliente implements Runnable {
                     int columnaOrigen = Integer.parseInt(partesMensaje[2]);
                     int filaDestino = Integer.parseInt(partesMensaje[3]);
                     int columnaDestino = Integer.parseInt(partesMensaje[4]);
-
-                    //Se llama al método moverFicha del tablero para actualizar el estado del juego
-                    //con el movimiento que el servidor ha realizado.
                     tableroJuego.moverFicha(filaOrigen, columnaOrigen, filaDestino, columnaDestino);
-
-                    // Imprimimos en consola temporalmente para el diagnóstico (debugging)
-                    tableroJuego.ImprimirTablero();
-
+                    ventanaJuego.SincronizacionTablero();
+                    ventanaJuego.setMiTurno(true);
                     //Se imprime en la consola del servidor el movimiento que el cliente ha realizado,
                     //mostrando las coordenadas de origen y destino de la ficha movida.
                     System.out.println("El rival movió la ficha de [" + filaOrigen + "," + columnaOrigen + "] a [" + filaDestino + "," + columnaDestino + "]");
@@ -93,6 +90,8 @@ public class ConexionCliente implements Runnable {
 
         }
     }
-
+    public void setInterfaz(Interfaz ventana) {
+    this.ventanaJuego = ventana;
+}
 }
     
