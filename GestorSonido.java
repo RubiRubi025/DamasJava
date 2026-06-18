@@ -4,48 +4,57 @@ import java.io.File;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
-import javax.sound.sampled.FloatControl; // Importación nueva para el volumen
+import javax.sound.sampled.FloatControl; 
 
 public class GestorSonido {
-
-    // 1. La ruta exacta de tu archivo
-    private String rutaSonidoClic = "damas/assets/sounds/the_mountain-game-179496.wav";
     
-    // 2. Nuestro interruptor maestro (Nace encendido)
+    private Clip clipMusica;
     private boolean estaMuteado = false;
+    
+    // Solo dejamos la ruta de la música de fondo épica
+    private String rutaMusicaFondo = "damas/assets/sounds/the_mountain-game-179496.wav";
 
-    public void reproducirClic() {
-        // Si el jugador silenció el juego, abortamos la misión y no suena nada
-        if (estaMuteado) {
-            return; 
-        }
-
+    public GestorSonido() {
         try {
-            File archivoSonido = new File(rutaSonidoClic);
-
-            if (archivoSonido.exists()) {
-                AudioInputStream audioInput = AudioSystem.getAudioInputStream(archivoSonido);
-                Clip clip = AudioSystem.getClip();
-                clip.open(audioInput);
+            File archivoAudio = new File(rutaMusicaFondo);
+            if (archivoAudio.exists()) {
+                AudioInputStream audioStream = AudioSystem.getAudioInputStream(archivoAudio);
+                clipMusica = AudioSystem.getClip();
+                clipMusica.open(audioStream);
                 
                 // --- MAGIA DEL VOLUMEN ---
-                // Capturamos el control de volumen del clip
-                FloatControl controlVolumen = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-                // Le restamos 15 decibelios para que sea un sonido sutil y elegante
-                controlVolumen.setValue(-15.0f); 
-                
-                clip.start();
-                
+                FloatControl controlVolumen = (FloatControl) clipMusica.getControl(FloatControl.Type.MASTER_GAIN);
+                controlVolumen.setValue(-15.0f); // Volumen elegante
             } else {
-                System.out.println("Ojo: No se encontró el archivo en -> " + rutaSonidoClic);
+                System.out.println("Ojo: No se encontró la música en -> " + rutaMusicaFondo);
             }
         } catch (Exception e) {
-            System.out.println("Error interno de audio: " + e.getMessage());
+            System.out.println("Error al cargar la música: " + e.getMessage());
         }
     }
 
-    // Método que llamaremos desde un futuro botón en la interfaz para apagar/prender el sonido
+    public void reproducirMusicaFondo() {
+        if (clipMusica != null && !estaMuteado) {
+            if (!clipMusica.isRunning()) { 
+                clipMusica.setFramePosition(0); 
+                clipMusica.loop(Clip.LOOP_CONTINUOUSLY); // Bucle infinito
+            }
+        }
+    }
+
     public void alternarMute() {
         estaMuteado = !estaMuteado;
+        if (clipMusica != null) {
+            if (estaMuteado) {
+                clipMusica.stop(); 
+            } else {
+                reproducirMusicaFondo(); 
+            }
+        }
+    }
+
+    // Mantenemos el método para que el resto del código no dé error (rojo), pero lo dejamos vacío
+    public void reproducirClic() {
+        // Misión abortada: No hay efectos de sonido por falta de tiempo.
     }
 }
