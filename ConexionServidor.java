@@ -15,15 +15,17 @@ public class ConexionServidor implements Runnable {
     private int puerto;
     private ServerSocket servidor;
     private Socket cliente;
+    private Tablero tableroJuego;
 
     // Streams/embudos para enviar y recibir datos entre el servidor y el cliente
     private DataInputStream entrada;
     private DataOutputStream salida;
 
-    // Constructor que inicializa el puerto del servidor
-    public ConexionServidor(int puerto) {
-
+    // Constructor que inicializa el puerto del servidor y la referencia al tablero del juego
+    public ConexionServidor(int puerto, Tablero tablero) {
+        
         this.puerto = puerto; // Guarda el número de puerto para el servidor
+        this.tableroJuego = tablero; // Guarda la referencia al tablero del juego
 
     }
 
@@ -62,6 +64,13 @@ public class ConexionServidor implements Runnable {
                     int columnaOrigen = Integer.parseInt(partesMensaje[2]);
                     int filaDestino = Integer.parseInt(partesMensaje[3]);
                     int columnaDestino = Integer.parseInt(partesMensaje[4]);
+
+                    //Se llama al método moverFicha del tablero para actualizar el estado del juego 
+                    //con el movimiento que el cliente ha realizado.
+                    tableroJuego.moverFicha(filaOrigen, columnaOrigen, filaDestino, columnaDestino);
+
+                    // Imprimimos en consola temporalmente para el diagnóstico (debugging)
+                    tableroJuego.ImprimirTablero();
 
                     //Se imprime en la consola del servidor el movimiento que el cliente ha realizado,
                     //mostrando las coordenadas de origen y destino de la ficha movida.
