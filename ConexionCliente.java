@@ -1,109 +1,91 @@
 package damas;
 
-//Importaciones necesarias para la parte de red del cliente
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.Socket;
+import javax.swing.SwingUtilities;
 
-//Clase que representa la conexión del cliente para el juego de damas, esto es un hilo 
-//que se ejecuta en el fondo para manejar la comunicación con el servidor sin congelar la pantalla del cliente
 public class ConexionCliente implements Runnable {
 
-    //Atributos para la conexión del cliente
     private Socket cliente;
     private String direccionIP;
     private int puerto;
-
-    //Streams/embudos para enviar y recibir datos entre el cliente y el servidor
-    private DataInputStream entrada;
-    private DataOutputStream salida;
+    
+    // PARCHE DE INGENIERÍA: 'volatile'
+    private volatile DataInputStream entrada;
+    private volatile DataOutputStream salida;
+    
     private Tablero tableroJuego;
-    private Interfaz ventanaJuego;  
+    private volatile Interfaz ventanaJuego;  
     private String miNombre;
 
-
-    //Constructor que inicializa la dirección IP y el puerto del servidor al que el cliente se conectará
-    public ConexionCliente(String direccionIP, int puerto, Tablero tableroLogico, String miNombre) {
-        this.direccionIP = direccionIP; // Guarda la dirección IP del servidor
-        this.puerto = puerto; // Guarda el número de puerto del servidor
+    public ConexionCliente(String direccionIP, int puerto, Tablero tableroLogico, String miNombre) throws Exception {
+        this.direccionIP = direccionIP;
+        this.puerto = puerto;
         this.tableroJuego = tableroLogico;
         this.miNombre = miNombre;
-
+        
+        cliente = new Socket(direccionIP, puerto);
+        System.out.println("¡Conectado al servidor con éxito!");
     }
 
     @Override
-    public void run(){
-        //Bloque try/catch para manejar posibles errores de red
+    public void run() {
         try {
-
-            //Intenta conectarse al servidor usando la dirección IP y el puerto especificados
-            cliente = new Socket(direccionIP, puerto);
-            System.out.println("¡Conectado al servidor con éxito!");
-
-            //Inicializa los streams para enviar y recibir datos
             entrada = new DataInputStream(cliente.getInputStream());
             salida = new DataOutputStream(cliente.getOutputStream());
+            
             enviarMensaje("NOMBRE," + miNombre);
 
-                //Este bucle permanece activo mientras el cliente esté corriendo,
-                //esperando y procesando mensajes del servidor
+            while (true) {
+                String mensaje = entrada.readUTF();
+                System.out.println("Mensaje recibido del servidor: " + mensaje);
 
-                while (true) {
-                    
-                    String mensaje = entrada.readUTF();
-                    System.out.println("Mensaje recibido del servidor: " + mensaje);
-
-                    // Aquí se pueden agregar condiciones para procesar diferentes tipos de mensajes
-                String[] partesMensaje = mensaje.split(","); // Divide el mensaje en partes usando la coma como separador
-                String accion = partesMensaje[0]; // La primera parte del mensaje indica la acción a realizar
-                        if (accion.equals("NOMBRE")) {
-                        String nombreRival = partesMensaje[1];
-                        
-                        // Truco de ingeniero: Esperamos un milisegundo por si la ventana gráfica aún se está dibujando
-                        while(ventanaJuego == null) {
-                            try { Thread.sleep(100); } catch(Exception e){}
-                        }
-                        
-                        ventanaJuego.setNombreBlancas(nombreRival);
+                String[] partesMensaje = mensaje.split(",");
+                String accion = partesMensaje[0];
+                
+                if (accion.equals("NOMBRE")) {
+                    String nombreRival = partesMensaje[1];
+                    while(ventanaJuego == null) {
+                        try { Thread.sleep(100); } catch(Exception e) {}
                     }
-                //procesamiento de un mensaje de movimiento
-                if (accion.equals("MOVER")){
-
-                    //Traducción de las partes del mensaje que son texto a números enteros.
+                    SwingUtilities.invokeLater(() -> {
+                        ventanaJuego.setNombreBlancas(nombreRival);
+                    });
+                }
+                
+                if (accion.equals("MOVER")) {
                     int filaOrigen = Integer.parseInt(partesMensaje[1]);
                     int columnaOrigen = Integer.parseInt(partesMensaje[2]);
                     int filaDestino = Integer.parseInt(partesMensaje[3]);
                     int columnaDestino = Integer.parseInt(partesMensaje[4]);
+                    
                     tableroJuego.moverFicha(filaOrigen, columnaOrigen, filaDestino, columnaDestino);
-                    ventanaJuego.SincronizacionTablero();
-                    ventanaJuego.actualizarTurno();
-                    ventanaJuego.setMiTurno(true);
-                    //Se imprime en la consola del servidor el movimiento que el cliente ha realizado,
-                    //mostrando las coordenadas de origen y destino de la ficha movida.
-                    System.out.println("El rival movió la ficha de [" + filaOrigen + "," + columnaOrigen + "] a [" + filaDestino + "," + columnaDestino + "]");
-
+                    
+                    SwingUtilities.invokeLater(() -> {
+                        ventanaJuego.SincronizacionTablero();
+                        ventanaJuego.setMiTurno(true);
+                        ventanaJuego.actualizarTurno();
+                    });
                 }
-                }
-
-            } catch (Exception e) {
-            
-            //Si ocurre un error, se imprime el mensaje de error en la consola
-            System.out.println("Error: " + e.getMessage());
+            }
+        } catch (Exception e) {
+            System.out.println("Error en ConexionCliente: " + e.getMessage());
         }
     }
 
-    //Método para enviar un mensaje al servidor
-    public void enviarMensaje(String mensaje){
+    public void enviarMensaje(String mensaje) {
         try {
-            salida.writeUTF(mensaje);
-            
+            if (salida != null) {
+                salida.writeUTF(mensaje);
+                salida.flush(); // Empuja la data inmediatamente por el cable
+            }
         } catch (Exception e) {
             System.out.println("Error al enviar: " + e.getMessage());
-
         }
     }
-    public void setInterfaz(Interfaz ventana) {
-    this.ventanaJuego = ventana;
-}
-}
     
+    public void setInterfaz(Interfaz ventana) {
+        this.ventanaJuego = ventana;
+    }
+}

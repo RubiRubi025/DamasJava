@@ -1,118 +1,103 @@
 package damas;
 
-//Importaciones son necesarias para la parte de red del servidor
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import javax.swing.SwingUtilities;
 
-//Clase que representa la conexión del servidor para el juego de damas
-// La palabra "implements Runnable" convierte esta clase en un Hilo (Thread) 
-// que puede correr en el fondo sin congelar la pantalla.
 public class ConexionServidor implements Runnable {
 
-    // Atributos para la conexión del servidor
     private int puerto;
     private ServerSocket servidor;
     private Socket cliente;
-
-    // Streams/embudos para enviar y recibir datos entre el servidor y el cliente
-    private DataInputStream entrada;
-    private DataOutputStream salida;
+    
+    // PARCHE DE INGENIERÍA: 'volatile' obliga a la Interfaz a ver estos datos en tiempo real
+    private volatile DataInputStream entrada;
+    private volatile DataOutputStream salida;
+    private volatile boolean conectado = false; // Nuestro sensor blindado
+    
     private Tablero tableroJuego;
-    private Interfaz ventanaJuego; 
+    private volatile Interfaz ventanaJuego; 
     private String miNombre; 
 
-    // Constructor que inicializa el puerto del servidor
-    public ConexionServidor(int puerto, Tablero tableroLogico, String miNombre) {
-
+    public ConexionServidor(int puerto, Tablero tableroLogico, String miNombre) throws Exception {
         this.miNombre = miNombre;
-        this.puerto = puerto; // Guarda el número de puerto para el servidor
+        this.puerto = puerto;
         this.tableroJuego = tableroLogico;
-}
+        this.servidor = new ServerSocket(puerto); 
+        System.out.println("Servidor inicializado en el puerto " + puerto);
+    }
 
-    // Método que se ejecuta cuando el hilo del servidor comienza a correr
+    // Ahora la interfaz lee el sensor, no la variable 'salida'
+    public boolean isConectado() {
+        return conectado; 
+    }
+
     @Override
-    public void run(){
-
-        // Bloque try/catch para manejar posibles errores de red
+    public void run() {
         try {
-
-            servidor= new ServerSocket(puerto); // Crea un servidor que escucha en el puerto especificado
             System.out.println("Servidor abierto. Esperando al jugador 2... ");
-            cliente = servidor.accept(); // Espera a que un cliente se conecte y acepta la conexión
+            cliente = servidor.accept(); 
             System.out.println("¡Cliente conectado con éxito!");
 
-            // Inicializa los streams para enviar y recibir datos
-            entrada = new DataInputStream(cliente.getInputStream()); // Stream para recibir datos del cliente
-            salida = new DataOutputStream(cliente.getOutputStream()); // Stream para enviar datos al cliente
+            entrada = new DataInputStream(cliente.getInputStream());
+            salida = new DataOutputStream(cliente.getOutputStream());
+            
+            // ¡ACTIVAMOS EL SENSOR! La interfaz se destraba automáticamente
+            conectado = true; 
+
             enviarMensaje("NOMBRE," + miNombre);
 
-            //Este bucle permanece activo mientras el servidor 
-            //esté corriendo, esperando y procesando mensajes del cliente
-            while(true){
-
+            while(true) {
                 String mensaje = entrada.readUTF();
                 System.out.println("Mensaje recibido del cliente: " + mensaje);
 
-                // Aquí se pueden agregar condiciones para procesar diferentes tipos de mensajes
-                String[] partesMensaje = mensaje.split(","); // Divide el mensaje en partes usando la coma como separador
-                String accion = partesMensaje[0]; // La primera parte del mensaje indica la acción a realizar
+                String[] partesMensaje = mensaje.split(",");
+                String accion = partesMensaje[0];
+                
                 if (accion.equals("NOMBRE")) {
-    String nombreRival = partesMensaje[1];
-    
-                while(ventanaJuego == null) {
-                    try { Thread.sleep(100); } catch(Exception e){}
+                    String nombreRival = partesMensaje[1];
+                    while(ventanaJuego == null) {
+                        try { Thread.sleep(100); } catch(Exception e) {}
+                    }
+                    SwingUtilities.invokeLater(() -> {
+                        ventanaJuego.setNombreNegras(nombreRival);
+                    });
                 }
                 
-                // El servidor (Host) siempre juega con Blancas, así que el rival es el de las Negras
-                ventanaJuego.setNombreNegras(nombreRival);
-            }
-                //procesamiento de un mensaje de movimiento
-                if (accion.equals("MOVER")){
-
-                    //Traducción de las partes del mensaje que son texto a números enteros.
+                if (accion.equals("MOVER")) {
                     int filaOrigen = Integer.parseInt(partesMensaje[1]); 
                     int columnaOrigen = Integer.parseInt(partesMensaje[2]);
                     int filaDestino = Integer.parseInt(partesMensaje[3]);
                     int columnaDestino = Integer.parseInt(partesMensaje[4]);
+                    
                     tableroJuego.moverFicha(filaOrigen, columnaOrigen, filaDestino, columnaDestino);
-                    ventanaJuego.SincronizacionTablero();
-                    ventanaJuego.actualizarTurno();
-                    ventanaJuego.setMiTurno(true);
-
-                    //Se llama al método moverFicha del tablero para actualizar el estado del juego 
-                    //con el movimiento que el cliente ha realizado.
-
-                    // Imprimimos en consola temporalmente para el diagnóstico (debugging)
-                    tableroJuego.ImprimirTablero();
-
-                    //Se imprime en la consola del servidor el movimiento que el cliente ha realizado,
-                    //mostrando las coordenadas de origen y destino de la ficha movida.
-                    System.out.println("El rival movió la ficha de [" + filaOrigen + "," + columnaOrigen + "] a [" + filaDestino + "," + columnaDestino + "]");
-
+                    
+                    SwingUtilities.invokeLater(() -> {
+                        ventanaJuego.SincronizacionTablero();
+                        ventanaJuego.setMiTurno(true);
+                        ventanaJuego.actualizarTurno();
+                    });
                 }
-
             }
-
         } catch (Exception e) {
-
-            //Si ocurre un error, se imprime el mensaje de error en la consola
-            System.out.println("Error: " + e.getMessage());
-
+            System.out.println("Error en ConexionServidor: " + e.getMessage());
         }
     }
     
-    // Método para enviar un mensaje al cliente
-    public void enviarMensaje(String mensaje){
+    public void enviarMensaje(String mensaje) {
         try {
-            salida.writeUTF(mensaje);
-
+            if (salida != null) {
+                salida.writeUTF(mensaje);
+                salida.flush(); // Empuja la data inmediatamente por el cable
+            }
         } catch (Exception e) {
             System.out.println("Error al enviar: " + e.getMessage());
         }
     }
+    
     public void setInterfaz(Interfaz ventana) {
-    this.ventanaJuego = ventana;
-}
+        this.ventanaJuego = ventana;
+    }
 }

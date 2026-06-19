@@ -94,27 +94,34 @@ public class MenuPrincipal {
             menuPrincipal.dispose();
         });
         
-        botonHost.addActionListener(e -> {
+botonHost.addActionListener(e -> {
             reproductor.reproducirClic();
             String miNombre = JOptionPane.showInputDialog("Ingresa tu nombre (Host/Blancas):");
             if (miNombre == null) return;
             if (miNombre.trim().isEmpty()) miNombre = "Host";
             
-            Tablero tableroLogico = new Tablero();
-            ConexionServidor servidor = new ConexionServidor(5000, tableroLogico, miNombre);
-            Thread hiloServidor = new Thread(servidor);
-            hiloServidor.start();
-            
             try {
-                String miIp = java.net.InetAddress.getLocalHost().getHostAddress();
-                JOptionPane.showMessageDialog(null, "Servidor abierto.\nOponente IP: " + miIp + "\nPuerto: 5000");
+                Tablero tableroLogico = new Tablero();
+                ConexionServidor servidor = new ConexionServidor(5050, tableroLogico, miNombre);
+                Thread hiloServidor = new Thread(servidor);
+                hiloServidor.start();
+                
+                // --- MENSAJE MANUAL BLINDADO ---
+                JOptionPane.showMessageDialog(null, 
+                    "Servidor abierto en el puerto 5050.\n\n" +
+                    "⚠️ IMPORTANTE:\n" +
+                    "Para evitar errores de red, minimiza el juego, abre tu consola (CMD), escribe 'ipconfig'\n" +
+                    "y dictale a tu oponente la dirección IPv4 exacta de la red que estén usando\n" +
+                    "(Ya sea la Zona Wi-Fi o el cable Ethernet del salón).", 
+                    "¡Servidor Listo!", JOptionPane.INFORMATION_MESSAGE);
+                
+                Interfaz juego = new Interfaz(tableroLogico, servidor, null, miNombre, "Esperando...");
+                servidor.setInterfaz(juego);
+                menuPrincipal.dispose();
+                
             } catch (Exception ex) {
-                System.out.println("Error IP");
+                JOptionPane.showMessageDialog(null, "Error Crítico: El puerto 5050 está bloqueado.\nDetalle: " + ex.getMessage(), "Error de Host", JOptionPane.ERROR_MESSAGE);
             }
-            
-            Interfaz juego = new Interfaz(tableroLogico, servidor, null, miNombre, "Esperando...");
-            servidor.setInterfaz(juego);
-            menuPrincipal.dispose();
         });
         
         botonClient.addActionListener(e -> {
@@ -125,14 +132,22 @@ public class MenuPrincipal {
             
             String ipHost = JOptionPane.showInputDialog("Ingresa la IP del Host:");
             if (ipHost != null && !ipHost.trim().isEmpty()) {
-                Tablero tableroLogico = new Tablero();
-                ConexionCliente cliente = new ConexionCliente(ipHost, 5000, tableroLogico, miNombre);
-                Thread hiloCliente = new Thread(cliente);
-                hiloCliente.start();
                 
-                Interfaz juego = new Interfaz(tableroLogico, null, cliente, "Esperando...", miNombre);
-                cliente.setInterfaz(juego);
-                menuPrincipal.dispose();
+                ipHost = ipHost.trim(); // LIMPIEZA DE ESPACIOS INVISIBLES
+                
+                try {
+                    Tablero tableroLogico = new Tablero();
+                    ConexionCliente cliente = new ConexionCliente(ipHost, 5050, tableroLogico, miNombre);
+                    Thread hiloCliente = new Thread(cliente);
+                    hiloCliente.start();
+                    
+                    Interfaz juego = new Interfaz(tableroLogico, null, cliente, "Esperando...", miNombre);
+                    cliente.setInterfaz(juego);
+                    menuPrincipal.dispose();
+                } catch (Exception ex) {
+                    // ¡NUEVO!: Imprimimos el código exacto de Java que causa el bloqueo
+                    JOptionPane.showMessageDialog(null, "Fallo al conectar a " + ipHost + "\nError exacto: " + ex.toString(), "Error de Red", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
         
@@ -145,6 +160,7 @@ public class MenuPrincipal {
         menuPrincipal.setVisible(true);
     }
     
+    // (El resto de métodos de Ajustes y Botones de MenuPrincipal quedan idénticos)
     private void abrirMenuAjustesProfesional() {
         JDialog ventanaAjustes = new JDialog(menuPrincipal, "Configuración", true);
         ventanaAjustes.setSize(450, 450);

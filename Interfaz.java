@@ -180,6 +180,12 @@ public class Interfaz extends JFrame {
                 btn.addActionListener(e -> {
                     if (!miTurno) return;
 
+                    // ¡CORRECCIÓN!: NUEVO CANDADO PARA EL HOST
+                    if (servidor != null && !servidor.isConectado()) {
+                        JOptionPane.showMessageDialog(null, "Espera a que el Jugador 2 se conecte a la partida.", "Esperando Oponente", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+
                     if (filaOrigen == -1) {
                         Ficha ficha = tableroJuego.getFicha(fila, col);
                         if (ficha == null) {
@@ -215,16 +221,19 @@ public class Interfaz extends JFrame {
                         if (servidor != null) {
                             servidor.enviarMensaje(mensaje);
                             miTurno = false;
+                            actualizarTurno();
                         } else if (cliente != null) {
                             cliente.enviarMensaje(mensaje);
                             miTurno = false;
+                            actualizarTurno();
                         } else if (modoCPU) {
                             miTurno = false;
                             timerCPU.start();
+                            actualizarTurno();
                         } else {
                             miColor = miColor.equals("B") ? "N" : "B";
+                            actualizarTurno();
                         }
-                        actualizarTurno();
                     }
                     SincronizacionTablero();
                     filaOrigen = -1;
